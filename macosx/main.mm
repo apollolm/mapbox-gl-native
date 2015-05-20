@@ -3,7 +3,7 @@
 #include <mbgl/platform/platform.hpp>
 #include <mbgl/platform/darwin/settings_nsuserdefaults.hpp>
 #include <mbgl/platform/darwin/Reachability.h>
-#include <mbgl/platform/default/glfw_view.hpp>
+#include <mbgl/platform/default/qt_view.h>
 #include <mbgl/storage/default_file_source.hpp>
 #include <mbgl/storage/sqlite_cache.hpp>
 #include <mbgl/storage/network_status.hpp>
@@ -11,6 +11,9 @@
 #include <mbgl/util/geo.hpp>
 
 #import <Foundation/Foundation.h>
+
+#import <QtWidgets/QApplication>
+
 
 @interface URLHandler : NSObject
 @property (nonatomic) mbgl::Map *map;
@@ -101,8 +104,17 @@ const std::string &defaultCacheDatabase() {
     return path;
 }
 
-int main() {
-    GLFWView view;
+int main(int argc, char *argv[]) {
+
+    
+    QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+    
+    // Make Xlib and GLX thread safe under X11
+    QApplication::setAttribute(Qt::AA_X11InitThreads);
+    
+    QApplication app(argc, argv);
+    
+    QTView view;
 
     mbgl::SQLiteCache cache(defaultCacheDatabase());
     mbgl::DefaultFileSource fileSource(&cache);
@@ -150,11 +162,14 @@ int main() {
     map.setStyleURL(newStyle.first);
     view.setWindowTitle(newStyle.second);
 
-    view.run();
+    //Start event loop
+    const int returnValue = app.exec();
+    
+    //view.run();
 
     [reachability stopNotifier];
 
-    // Save settings
+    //Save settings
     mbgl::LatLng latLng = map.getLatLng();
     settings.latitude = latLng.latitude;
     settings.longitude = latLng.longitude;
@@ -163,5 +178,5 @@ int main() {
     settings.debug = map.getDebug();
     settings.save();
 
-    return 0;
+    return returnValue;
 }
